@@ -4,8 +4,9 @@ const bodyParser = require('body-parser');
 const ejs = require('ejs');
 const port = 3000;
 const mongoose = require("mongoose")
-const md5 = require("md5")
 
+var bcrypt = require('bcryptjs');
+const salt = bcrypt.genSaltSync(10);
 
 const app = express();
 
@@ -36,8 +37,9 @@ app.get("/register", function(req, res) {
 })
 
 app.post("/register", (req, res) => {
+    const hash = bcrypt.hashSync(req.body.password, salt);
     const email = req.body.username;
-    const password = md5(req.body.password);
+    const password = hash;
     const user = new User({
         email: email,
         password: password
@@ -52,16 +54,18 @@ app.post("/register", (req, res) => {
 
 app.post("/login", (req, res) => {
     const email = req.body.username;
-    const password = md5(req.body.password);
+
     User.findOne({
         email: email
     }, (err, foundOne) => {
         if (err) {
             console.log(err);
         } else {
-            if (foundOne.password === password)
-                res.render("secrets")
-            else
+            if (foundOne) {
+
+                if (bcrypt.compareSync(req.body.password, foundOne.password))
+                    res.render("secrets")
+            } else
                 console.log("invalid user")
 
 
